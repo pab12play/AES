@@ -10,7 +10,7 @@ namespace AES
     {
         static void Main(string[] args)
         {
-            encrypt("", "", 128);
+            encrypt("", "hola", 256);
         }
 
         static void encrypt(string plaintext, string password, int nBits)
@@ -28,14 +28,12 @@ namespace AES
             for (int i = 0; i < nBytes; i++)
             {  // use 1st 16/24/32 chars of password for key
                 pwBytes[i] = i < password.Length ? Convert.ToByte(password[i]) : (byte)0;
-                Console.WriteLine("");
             }
 
-        }
-
-        static void keyExpansion(string key)
-        {
+            Aes aes = new Aes();
+            aes.keyExpansion(pwBytes);
 
         }
+
     }
 }
