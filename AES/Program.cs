@@ -31,8 +31,9 @@ namespace AES
             }
 
             Aes aes = new Aes();
-            aes.keyExpansion(pwBytes);
-
+            byte[] key = aes.cipher(pwBytes, aes.keyExpansion(pwBytes)); // gives us 16-byte key
+            //key = key.concat(key.slice(0, nBytes - 16));  // expand key to 16/24/32 bytes long
+            Console.WriteLine("");
         }
 
     }

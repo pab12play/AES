@@ -9,13 +9,145 @@ namespace AES
     class Aes
     {
 
+
+        /**
+     * AES Cipher function: encrypt 'input' state with Rijndael algorithm [§5.1];
+     *   applies Nr rounds (10/12/14) using key schedule w for 'add round key' stage.
+     *
+     * @param   {number[]}   input - 16-byte (128-bit) input state array.
+     * @param   {number[][]} w - Key schedule as 2D byte-array (Nr+1 × Nb bytes).
+     * @returns {number[]}   Encrypted output state array.
+     */
+        public byte[] cipher(byte[] input, byte[,] w)
+        {
+            const int Nb = 4;               // block size (in words): no of columns in state (fixed at 4 for AES)
+            int Nr = w.GetLength(0) / Nb - 1; // no of rounds: 10/12/14 for 128/192/256-bit keys
+
+            byte[,] state = new byte[4,4];  // initialise 4×Nb byte-array 'state' with input [§3.4]
+            for (int i = 0; i < 4 * Nb; i++) state[i % 4,(int)Math.Floor((double)i / 4)] = input[i];
+
+            state = addRoundKey(state, w, 0, Nb);
+
+            for (int round = 1; round < Nr; round++)
+            {
+                ronda++;
+                state = subBytes(state, Nb);
+                print(state, round, "subBytes");
+                state = shiftRows(state, Nb);
+                print(state, round, "shiftRows");
+                state = mixColumns(state, Nb);
+                print(state, round, "mixColumns");
+                state = addRoundKey(state, w, round, Nb);
+                print(state, round, "addRoundKey");
+            }
+
+            state = subBytes(state, Nb);
+            state = shiftRows(state, Nb);
+            state = addRoundKey(state, w, Nr, Nb);
+
+            byte[] output = new byte[(4 * Nb)];  // convert state to 1-d array before returning [§3.4]
+            for (int i = 0; i < 4 * Nb; i++) output[i] = state[i % 4,i / 4];
+
+            return output;
+        }
+
+        public void print(byte[,] info,int round,string funcion)
+        {
+            string cadena = "";
+            for(int i = 0; i < info.GetLength(0); i++)
+            {
+                for (int j = 0; j < info.GetLength(1); j++)
+                {
+                    cadena = cadena + info[i,j] + " ";
+                }
+            }
+            Console.WriteLine("Round:"+round+" "+funcion+" "+cadena);
+        }
+
+
+        /**
+     * Apply SBox to state S [§5.1.1].
+     *
+     * @private
+     */
+        private byte[,] subBytes(byte[,] s,int Nb)
+        {
+            for (int r = 0; r < 4; r++)
+            {
+                for (int c = 0; c < Nb; c++) s[r,c] = sBox[s[r,c]];
+            }
+            return s;
+        }
+
+
+        /**
+         * Shift row r of state S left by r bytes [§5.1.2].
+         *
+         * @private
+         */
+        private byte[,] shiftRows(byte[,] s,int Nb)
+        {
+            byte[] t = new byte[(4)];
+            for (int r = 1; r < 4; r++)
+            {
+                for (int c = 0; c < 4; c++) t[c] = s[r,(c + r) % Nb];  // shift into temp copy
+                for (int c = 0; c < 4; c++) s[r,c] = t[c];         // and copy back
+            }          // note that this will work for Nb=4,5,6, but not 7,8 (always 4 for AES):
+            return s;  // see asmaes.sourceforge.net/rijndael/rijndaelImplementation.pdf
+        }
+
+        int ronda = 0;
+        /**
+         * Combine bytes of each col of state S [§5.1.3].
+         *
+         * @private
+         */
+        private byte[,] mixColumns(byte[,] s,int Nb)
+        {
+            for (int c = 0; c < Nb; c++)
+            {
+                byte[] a = new byte[(Nb)];  // 'a' is a copy of the current column from 's'
+                byte[] b = new byte[(Nb)];  // 'b' is a•{02} in GF(2^8)
+                for (int r = 0; r < 4; r++)
+                {
+                    a[r] = s[r,c];
+                    b[r] = (s[r, c] & 0x80)!=0 ? (byte)(s[r,c] << 1 ^ 0x011b) : (byte)(s[r,c] << 1);
+                    if (ronda == 3)
+                    {
+                        Console.Write("hola");
+                    }
+                }
+                // a[n] ^ b[n] is a•{03} in GF(2^8)
+                s[0,c] = (byte)(b[0] ^ a[1] ^ b[1] ^ a[2] ^ a[3]); // {02}•a0 + {03}•a1 + a2 + a3
+                s[1,c] = (byte)(a[0] ^ b[1] ^ a[2] ^ b[2] ^ a[3]); // a0 • {02}•a1 + {03}•a2 + a3
+                s[2,c] = (byte)(a[0] ^ a[1] ^ b[2] ^ a[3] ^ b[3]); // a0 + a1 + {02}•a2 + {03}•a3
+                s[3,c] = (byte)(a[0] ^ b[0] ^ a[1] ^ a[2] ^ b[3]); // {03}•a0 + a1 + a2 + {02}•a3
+            }
+            return s;
+        }
+
+
+        /**
+         * Xor Round Key into state S [§5.1.4].
+         *
+         * @private
+         */
+        private byte[,] addRoundKey(byte[,] state, byte[,] w,int rnd,int Nb)
+        {
+            for (int r = 0; r < 4; r++)
+            {
+                for (int c = 0; c < Nb; c++) state[r,c] ^= w[rnd * 4 + c,r];
+            }
+            return state;
+        }
+
         /**
      * Perform key expansion to generate a key schedule from a cipher key [§5.2].
      *
      * @param   {number[]}   key - Cipher key as 16/24/32-byte array.
      * @returns {number[][]} Expanded key schedule as 2D byte-array (Nr+1 × Nb bytes).
      */
-        public void keyExpansion(byte[] key)
+        public byte[,] keyExpansion(byte[] key)
         {
             const int Nb = 4;            // block size (in words): no of columns in state (fixed at 4 for AES)
             int Nk = key.Length / 4; // key length (in words): 4/6/8 for 128/192/256-bit keys
@@ -53,9 +185,7 @@ namespace AES
                 // xor w[i] with w[i-1] and w[i-Nk]
                 for (int t = 0; t < 4; t++) w[i, t] = (byte)(w[i - Nk, t] ^ temp[t]);
             }
-
-            Console.WriteLine("");
-            //return w;
+            return w;
         }
 
 
