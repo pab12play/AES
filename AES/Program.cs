@@ -80,7 +80,6 @@ namespace AES
                 }
                 ciphertext = ciphertext + string.Join("",cipherChar);
             }
-            Console.WriteLine(ctrTxt + ciphertext);
             ciphertext = Base64Encode( ctrTxt + ciphertext);
             
 
@@ -106,7 +105,6 @@ namespace AES
                 Console.WriteLine("Key size is not 128 / 192 / 256");
             }
             ciphertext = Base64Decode(ciphertext);
-            Console.WriteLine(ciphertext);
             // use AES to encrypt password (mirroring encrypt routine)
             int nBytes = nBits / 8;  // no bytes in key
             byte[] pwBytes = new byte[(nBytes)];

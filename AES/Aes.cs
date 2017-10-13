@@ -32,13 +32,9 @@ namespace AES
             {
                 ronda++;
                 state = subBytes(state, Nb);
-                print(state, round, "subBytes");
                 state = shiftRows(state, Nb);
-                print(state, round, "shiftRows");
                 state = mixColumns(state, Nb);
-                print(state, round, "mixColumns");
                 state = addRoundKey(state, w, round, Nb);
-                print(state, round, "addRoundKey");
             }
 
             state = subBytes(state, Nb);
@@ -49,19 +45,6 @@ namespace AES
             for (int i = 0; i < 4 * Nb; i++) output[i] = state[i % 4,i / 4];
 
             return output;
-        }
-
-        public void print(byte[,] info,int round,string funcion)
-        {
-            string cadena = "";
-            for(int i = 0; i < info.GetLength(0); i++)
-            {
-                for (int j = 0; j < info.GetLength(1); j++)
-                {
-                    cadena = cadena + info[i,j] + " ";
-                }
-            }
-            Console.WriteLine("Round:"+round+" "+funcion+" "+cadena);
         }
 
 
@@ -112,10 +95,6 @@ namespace AES
                 {
                     a[r] = s[r,c];
                     b[r] = (s[r, c] & 0x80)!=0 ? (byte)(s[r,c] << 1 ^ 0x011b) : (byte)(s[r,c] << 1);
-                    if (ronda == 3)
-                    {
-                        Console.Write("hola");
-                    }
                 }
                 // a[n] ^ b[n] is a•{03} in GF(2^8)
                 s[0,c] = (byte)(b[0] ^ a[1] ^ b[1] ^ a[2] ^ a[3]); // {02}•a0 + {03}•a1 + a2 + a3
